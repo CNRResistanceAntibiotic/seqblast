@@ -1,0 +1,386 @@
+#!/usr/bin/python
+# Write by Richard Bonnet
+# Date: 19/01/2016
+import os
+import subprocess
+import argparse
+from Bio import SeqIO
+import time, datetime
+
+install_dir = os.path.dirname(os.path.realpath(__file__))
+
+def setup_samples(sample_file):
+    #sample_dict = {}
+    sample_list = []
+    for line in open(sample_file, 'r'):
+        try:
+            prefix = line.split('\t')[0]
+            species = line.strip().split('\t')[1].lower()
+            print '  => ID:', prefix, 'Species', species
+            #sample_dict[prefix] = species
+            sample_list.append(prefix)
+        except IndexError:
+            print 'File format problem!'
+            print 'Required format:'
+            print 'prefix\tgenre species'
+            exit()
+
+    return sample_list
+
+
+def check_trimming(job_dir):
+    sk_pe_trim_list = [os.path.join(job_dir, 'sk_s1_pe.fastq.gz'),
+                       os.path.join(job_dir, 'sk_s2_pe.fastq.gz'),
+                       os.path.join(job_dir, 'sk_s3_up.fastq.gz')]
+
+    sk_se_trim_list = [os.path.join(job_dir, 'sk_s1_se.fastq.gz')]
+
+    tr_pe_trim_list = [os.path.join(job_dir, 'tr_s1_pe.fastq.gz'),
+                       os.path.join(job_dir, 'tr_s1_up.fastq.gz'),
+                       os.path.join(job_dir, 'tr_s2_pe.fastq.gz'),
+                       os.path.join(job_dir, 'tr_s2_up.fastq.gz')]
+
+    tr_se_trim_list = [os.path.join(job_dir, 'tr_s1_se.fastq.gz')]
+
+    for trimming_ouput_list in [sk_pe_trim_list, tr_pe_trim_list, sk_se_trim_list, tr_se_trim_list]:
+        trimming_output_file_found = False
+        for trimming_ouput_file in trimming_ouput_list:
+            if os.path.exists(trimming_ouput_file) == True:
+                trimming_output_file_found = True
+                break
+        if trimming_output_file_found == True:
+            print '\nTrimming output file:', trimming_ouput_list
+            print 'Trimming already done!\n'
+            break
+    return trimming_output_file_found
+
+
+def launch_trimming(sample, job_dir, fqDir, mergeReads, subset, trimmer):
+    job_dir = os.path.abspath(job_dir)
+    trim_dir = os.path.join(job_dir, 'trimming')
+
+    # SEARCH FASTQ OR FASTQ.GZ
+    file_list = []
+    for ext in ['.fastq','.fastq.gz']:
+        for dirpath, dirnames, filenames in os.walk(fqDir):
+            print(dirpath, dirnames, filenames)
+            file_list = file_list + [os.path.join(dirpath,filename) for filename in filenames if ((filename.endswith(ext)==True) and (sample == os.path.basename(filename).split('_')[0]))]
+    file_list.sort()
+    print file_list
+    # TRIMMING
+    cmd = '%s -f %s -r %s -o %s' % (os.path.join(install_dir, 'trimmer.py'), file_list[0], file_list[1], job_dir)
+    if mergeReads == True:
+        cmd = cmd + ' -m'
+    if subset != 'all':
+        cmd = cmd + ' -s %s' % subset
+    if trimmer == 'trimmomatic':
+        cmd = cmd + ' -tr'
+    else:
+        cmd = cmd + ' -sk'
+
+    print '\nTrimming launcher:\n%s\n' % cmd
+    out_str = subprocess.check_output(cmd, shell=True)
+    print out_str
+
+
+def launch_a5(sample, job_dir, fastq_dir, force):
+
+    job_dir = os.path.abspath(job_dir)
+    fastq_dir = os.path.abspath(fastq_dir)
+    # SEARCH FASTQ OR FASTQ.GZ
+    file_list = []
+    for ext in ['.fastq','.fastq.gz']:
+        for dirpath, dirnames, filenames in os.walk(fastq_dir):
+            file_list = file_list + [os.path.join(dirpath,filename) for filename in filenames
+                if ((filename.endswith(ext)==True) and (sample == os.path.basename(filename).split('_')[0]))]
+    file_list.sort()
+    print '\nListing of assembly files:'
+    print file_list
+
+    # LAUNCH A5
+    ass_dir = os.path.join(job_dir, 'a5')
+    if os.path.exists(ass_dir) == False or force == True:
+        print '\nA5 launcher:'
+        a5_exe = '/usr/local/a5_miseq_linux_20160825/bin/a5_pipeline.pl'
+        cmd = 'python %s -file1 %s -file2 %s -id %s -out %s -exe %s' % (os.path.join(install_dir,'a5.py'), file_list[0], file_list[1], sample, ass_dir, a5_exe)
+        print cmd
+        out_str = subprocess.check_output(cmd, shell=True)
+        print out_str
+    else:
+        print '\nAssembly a5 already done!\n'
+
+
+def launch_spades(assembler, sample, job_dir, fastq_dir, force):
+    job_dir = os.path.abspath(job_dir)
+    fastq_dir = os.path.abspath(fastq_dir)
+    # SEARCH FASTQ AND FASTQ.GZ IN TRIM_DIR
+    file_list = []
+    for ext in ['.fastq','.fastq.gz']:
+        for dirpath, dirnames, filenames in os.walk(job_dir):
+            file_list = file_list + [os.path.join(dirpath,filename) for filename in filenames if filename.endswith(ext)]
+    file_list.sort()
+    print '\nListing of assembly files:'
+    print file_list
+
+    # SORT FASTQ AND FASTQ.GZ IN TRIM_DIR
+    sk_pe_list = []
+    sk_se_list = []
+    sk_up_list = []
+    tr_pe_list = []
+    tr_se_list = []
+    tr_up_list = []
+    for filename in file_list:
+        if   os.path.basename(filename).startswith('sk_s') and 'pe.fastq' in os.path.basename(filename):
+            sk_pe_list.append(filename)
+        elif os.path.basename(filename).startswith('sk_s') and 'se.fastq' in os.path.basename(filename):
+            sk_se_list.append(filename)
+        elif os.path.basename(filename).startswith('sk_s') and 'up.fastq' in os.path.basename(filename):
+            sk_up_list.append(filename)
+        elif os.path.basename(filename).startswith('tr_s') and 'pe.fastq' in os.path.basename(filename):
+            tr_pe_list.append(filename)
+        elif os.path.basename(filename).startswith('tr_s') and 'se.fastq' in os.path.basename(filename):
+            tr_se_list.append(filename)
+        elif os.path.basename(filename).startswith('tr_s') and 'up.fastq' in os.path.basename(filename):
+            tr_up_list.append(filename)
+
+    # SEARCH FASTA IN FASTQ_DIR
+    long_reads = []
+    for ext in ['.fasta']:
+        for dirpath, dirnames, filenames in os.walk(fastq_dir):
+            long_reads = long_reads + [os.path.join(dirpath,filename) for filename in filenames if filename.endswith(ext) and sample in filename]
+    if long_reads != []:
+        long_reads = long_reads[0]
+    else:
+        long_reads = ''
+
+    # LAUNCH SPADES ASSEMBLER
+
+    print '\nSPAdes & Quast launcher:',
+    cmd = os.path.join(install_dir,'spades.py')
+    if assembler == 'plasmidspades':
+        cmd = cmd + ' --plasmid'
+        print 'Plasmid assembly with',
+    else:
+        print 'Genomic assembly with',
+
+    if os.path.exists(os.path.join(job_dir, assembler)) == False or force == True:
+
+        if sk_pe_list != []:
+            sk_pe_list.sort()
+            cmd = cmd + ' -1 %s -2 %s' % (sk_pe_list[0], sk_pe_list[1])
+            if sk_up_list != []:
+                cmd = cmd + ' -s %s' % ','.join(sk_up_list)
+            if long_reads != '':
+                cmd = cmd + ' -tc %s' % long_reads
+            cmd = cmd + ' -o %s' % job_dir
+            print 'PE sickle files\n%s' % cmd
+            print 'SPAdes in process...'
+            # os.system(cmd)
+            out_str = subprocess.check_output(cmd, shell=True)
+            print out_str
+
+        elif tr_pe_list != []:
+            tr_pe_list.sort()
+            cmd = cmd + ' -1 %s -2 %s' % (tr_pe_list[0], tr_pe_list[1])
+            if tr_up_list != []:
+                cmd = cmd + ' -s %s' % ','.join(tr_up_list)
+            if long_reads != '':
+                cmd = cmd + ' -tc %s' % long_reads
+            cmd = cmd + ' -o %s' % job_dir
+            print 'PE Trimmomatic files\n%s' % cmd
+            print 'SPAdes in process...'
+            # os.system(cmd)
+            out_str = subprocess.check_output(cmd, shell=True)
+            print out_str
+
+        elif sk_se_list != []:
+            cmd = cmd + ' -s %s' % sk_se_list[0]
+            if long_reads != '':
+                cmd = cmd + ' -tc %s' % long_reads
+            cmd = cmd + ' -o %s' % job_dir
+            print 'SE sickle files\n%s' % cmd
+            print 'SPAdes in process...'
+            # os.system(cmd)
+            out_str = subprocess.check_output(cmd, shell=True)
+            print out_str
+
+        elif tr_se_list != []:
+            cmd = cmd + ' -s %s' % tr_se_list[0]
+            if long_reads != '':
+                cmd = cmd + ' -tc %s' % long_reads
+            cmd = cmd + ' -o %s' % job_dir
+            print 'SE Trimmomatic files\n%s' % cmd
+            print 'SPAdes in process...'
+            # os.system(cmd)
+            out_str = subprocess.check_output(cmd, shell=True)
+            print out_str
+    else:
+        print '\nAssembly %s already done!\n' % assembler
+
+
+def select_assembly(assembler, job_dir, sample):
+        if assembler == 'spades':
+            source_file = os.path.join(job_dir,'spades','scaffolds.fasta')
+        elif assembler == 'a5':
+            source_file = os.path.join(job_dir,'a5',sample + '.final.scaffolds.fasta')
+        destination_file = os.path.join(job_dir, sample + '.fasta')
+        #print source_file, destination_file
+
+        print '\n\n## Assembly with %s done!  ##' % assembler
+        print 'Quality check:'
+        s_qualityDic = assess_quality(source_file)
+        print 'Genome size: %i' % s_qualityDic['assembly_len']
+        print 'N number: %i' % s_qualityDic['N_number']
+        print 'Percentage of N(s): %.5f' % ((100*s_qualityDic['N_number'])/float(s_qualityDic['assembly_len']))
+        print 'Number of scaffold (length >= 500 pb): %i' % s_qualityDic['contig_number']
+        print 'N50: %i' % s_qualityDic['N50']
+        time.sleep(15)
+        s_N50 = s_qualityDic['N50']
+        copy = True
+        if os.path.exists(destination_file) == True:
+            d_qualityDic = assess_quality(destination_file)
+            d_N50 = d_qualityDic['N50']
+            if s_N50 < d_N50 :
+                copy = False
+
+        if copy == True:
+            print 'The assembly is written in %s' % destination_file
+            cmd = 'cp %s %s' % (source_file, destination_file)
+            os.system(cmd)
+            recList = []
+            f = open(destination_file, 'r')
+            n = 0
+            for rec in SeqIO.parse(f, 'fasta'):
+                n += 1
+                rec.id = 'ctg_%i' % n
+                rec.description = ''
+                recList.append(rec)
+            f.close()
+            SeqIO.write(recList, open(destination_file, 'w'), 'fasta')
+        else:
+            print 'The assembly was not selected as the best one on the basis of N50 values'
+        print '##  END  ##\n\n'
+
+
+def assess_quality(filename):
+    f=open(filename, 'r')
+    records      = []
+    assembly_len = 0
+    N_number     = 0
+    for rec in SeqIO.parse(f, 'fasta'):
+        N_number = N_number + str(rec.seq).count('N') + str(rec.seq).count('n')
+        assembly_len += len(str(rec.seq))
+        records.append(str(rec.seq))
+    f.close()
+    contig_number = len([x for x in records if len(x)>= 500])
+    records.sort(key=len)
+    total         = 0
+    for seq in records:
+        total += len(seq)
+        N50 = len(seq)
+        if total >= (assembly_len/2.0):
+            break
+    return {'assembly_len':assembly_len,'N50':N50,'contig_number':contig_number,'N_number':N_number}
+    
+
+def main(args):
+
+    trimmerList   = ['sickle','trimmomatic']
+    assemblerList = ['a5','spades','plasmidspades']
+
+    initial = args.initial
+    if initial == None:
+        print '\nError usage:'
+        print 'You should provide your ID with option -in\n'
+        exit(1)
+
+    # SETUP FASTQ/FASTGZ DIRECTORY
+    fqDir = args.fqDir
+    if os.path.exists(fqDir) == False:
+        print '\nFastq/Fastq.gz directory was not found: %s\n' % fqDir
+
+    # SETUP THE OUTPUT DIRECTORY
+    outDir = args.outDir
+    if outDir == '':
+        outDir = os.getcwd()
+    if os.path.exists(outDir) == False:
+        cmd = 'mkdir %s' % outDir
+        os.system(cmd)
+
+    # SETUP THE PREFIX AND SPECIES OF INPUT FILES AS A LIST FROM SAMPLE INPUT FILE
+    sampleFile = args.sampleFile
+    if sampleFile == '':
+        sampleFile = os.path.join(outDir, 'sample.csv')
+    if os.path.exists(sampleFile) == False:
+        print '\nSample file directory was not found: %s\n' % sampleFile
+        exit(1)
+    sample_list = setup_samples(sampleFile)
+
+    # SETUP TRIMMING
+    trimmer = args.trimmer
+
+    # SETUP SUBSETING
+    subset_size = args.subset
+
+    # SETUP READS MERGING
+    mergeReads = args.mergeReads
+
+    # START THE JOBS
+    for sample in sample_list:
+        job_dir = os.path.abspath(os.path.join(outDir, sample))
+        now = str(datetime.datetime.now())
+        f = open('/usr/local/seqblast/cnr/ass.txt','a')
+        f.write(sample + '\t' + now + '\t' + initial + '\n')
+        f.close()
+        if os.path.exists(job_dir) == False:
+            cmd = 'mkdir %s' % os.path.abspath(job_dir)
+            os.system(cmd)
+        print '\nStart with %s in %s' % (sample, job_dir)
+
+
+        # SETUP ASSEMBLER
+        print '\nLaunch assembly\n'
+        input_assemblerList  = args.assembler.split(',')
+        for assembler in input_assemblerList:
+            if assembler not in assemblerList:
+                print '\nInvalide assembler name: %s\n' % assembler
+                exit(1)
+
+            elif assembler == 'a5':
+                launch_a5(sample, job_dir, args.fqDir, args.force)
+                select_assembly(assembler, job_dir, sample)
+
+            elif assembler == 'spades' or assembler == 'plasmidspades':
+                trimming_output_file_found = check_trimming(job_dir)
+                if trimming_output_file_found == False or args.force == True:
+                    if trimmer in trimmerList:
+                        launch_trimming(sample, job_dir, fqDir, mergeReads, subset_size, trimmer)
+                    else:
+                        print '\nTrimmer %s not found\n' % trimmer
+                        exit(1)
+                launch_spades(assembler, sample, job_dir, fqDir, args.force)
+                select_assembly(assembler, job_dir, sample)
+
+
+def version():
+    return "1.0"
+
+
+def run():
+    parser = argparse.ArgumentParser(description='seqAssembler - Version ' + version())
+    parser.add_argument('-fq','--fqDir', dest="fqDir", default='/media/bacteriologie/TOSHIBAEXT/Analyse/Ecloacae/Fastq', help='The directory containing fastq or fastq.gz files')
+    parser.add_argument('-o','--outDir', dest="outDir", default='', help="The output directory name")
+    parser.add_argument('-s','--sampleFile', dest="sampleFile", default='', help="The sample file with sample names (default: $outDir/sample.csv)")
+    parser.add_argument('-tr','--trimmer', dest="trimmer", default='trimmomatic', help="sickle or trimmomatic or nothing (default: trimmomatic)")
+    parser.add_argument('-a','--assembler', dest="assembler", default="a5", help="Assembler names [a5,spades,plasmidspades] as a comma separated list (default: a5)")
+    parser.add_argument('-sb','--subset', dest="subset", default='all', help="The number of loaded reads by fastq file (default: all)")
+    parser.add_argument('-mg','--mergeReads', dest="mergeReads", action='store_true',default=False, help="Merge overlapping reads (default: False)")
+    parser.add_argument('-in','--initial', dest="initial", help="Initials of the operator")
+    parser.add_argument('-F','--force', dest="force", action='store_true',default=False, help="Force file overwrite (default: False)")
+
+    args = parser.parse_args()
+    main(args)
+
+
+if __name__ == '__main__':
+    run()

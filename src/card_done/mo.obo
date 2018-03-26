@@ -1,0 +1,205 @@
+format-version: 1.2
+date: 05:12:2016 15:08
+saved-by: CARD
+auto-generated-by: cv2obo
+default-namespace: model_ontology
+ontology: model_ontology
+
+[Term]
+id: MO:0000004
+name: single resistance variant
+namespace: model_ontology
+def: "A mutation or sequence variant that confers elevated resistance to antibiotic(s) relative to wild type. The most common encoded in the CARD is an amino acid substitution gleaned from the literature with format [wild-type][position][mutation], e.g. R184Q. Single or multiple amino acid substitutions can be present in a single gene or across multiple genes to confer resistance to antibiotic(s). In addition, there are insertions and deletions within genome sequences that confer elevated resistance towards antibiotic(s)." []
+relationship: part_of MO:0000002 ! protein variant model
+relationship: part_of MO:0000006 ! rRNA mutation model
+relationship: part_of MO:0000013 ! multiple gene mutations model
+relationship: part_of MO:0000015 ! single gene multiple mutations model
+relationship: part_of MO:0000017 ! deletion model
+relationship: part_of MO:0000019 ! insertion model
+
+[Term]
+id: MO:0000003
+name: BLASTP e-value
+namespace: model_ontology
+def: "A curated expectation value (e-value) for assignment of an Antibiotic Resistance Ontology term based on a BLASTP hit to a CARD reference sequence." []
+is_a: MO:0000028 ! nonfunctional insertion model
+relationship: part_of MO:0000002 ! protein variant model
+relationship: part_of MO:0000005 ! protein wild type model
+relationship: part_of MO:0000009 ! protein homolog model
+relationship: part_of MO:0000010 ! protein domain model
+relationship: part_of MO:0000013 ! multiple gene mutations model
+relationship: part_of MO:0000015 ! single gene multiple mutations model
+relationship: part_of MO:0000017 ! deletion model
+relationship: part_of MO:0000019 ! insertion model
+relationship: part_of MO:0000020 ! protein knockout model
+relationship: part_of MO:0000027 ! reverse antibiotic model
+
+[Term]
+id: MO:0000009
+name: protein homolog model
+namespace: model_ontology
+def: "Models to detect proteins conferring antibiotic resistance, which include a reference protein sequence and a curated BLASTP cut-off." []
+is_a: MO:0000001 ! AMR detection models
+
+[Term]
+id: MO:0000002
+name: protein variant model
+namespace: model_ontology
+def: "A model to detect proteins that confer elevated resistance to antibiotic(s) relative to wild type. These models include reference sequences (which may or may not be a wild type sequence), a curated BLASTP cut-off, and mapped resistance variants." []
+is_a: MO:0000001 ! AMR detection models
+
+[Term]
+id: MO:0000005
+name: protein wild type model
+namespace: model_ontology
+def: "A model to detect wild type proteins that are sensitive to antibiotic(s). These models are in development." []
+is_a: MO:0000001 ! AMR detection models
+
+[Term]
+id: MO:0000006
+name: rRNA mutation model
+namespace: model_ontology
+def: "A model to detect mutations in ribosomal RNA genes (rRNA) that confer elevated resistance to antibiotic(s) relative to wild type. These models include a reference rRNA sequence and mapped resistance variants." []
+is_a: MO:0000001 ! AMR detection models
+
+[Term]
+id: MO:0000007
+name: gene order
+namespace: model_ontology
+def: "A parameter to describe the relative order of genes detected by multiple detection models. The parameter is defined by a series of model_id separated by commas." []
+relationship: part_of MO:0000008 ! gene order model
+
+[Term]
+id: MO:0000008
+name: gene order model
+namespace: model_ontology
+def: "A meta-model to detect a defined gene order based on gene detection by other models." []
+is_a: MO:0000001 ! AMR detection models
+
+[Term]
+id: MO:0000001
+name: AMR detection models
+namespace: model_ontology
+def: "The Comprehensive Antibiotic Resistance Database uses models and model parameters for recording and detection of molecular determinants of antimicrobial resistance. For example, the \"protein homolog\" model type contains sequences of antimicrobial resistance genes that do not include mutation as a determinant of resistance, whereas the \"protein variant\" model includes reference wild type sequences used for mapping SNPs conferring antimicrobial resistance. " []
+
+[Term]
+id: MO:0000010
+name: protein domain model
+namespace: model_ontology
+def: "A model to detect specific domains of proteins that confer resistance to antibiotic(s) relative to wild type. These models include reference sequences, a curated BLASTP cut-off for each of the genes, and directionality of the fused genes (if known)." []
+is_a: MO:0000001 ! AMR detection models
+
+[Term]
+id: MO:0000011
+name: domain order
+namespace: model_ontology
+def: "A parameter to describe the genes in a fusion protein. The parameter is defined by Cvterm IDs, separated by commas. " []
+relationship: part_of MO:0000010 ! protein domain model
+
+[Term]
+id: MO:0000012
+name: domain direction or strand
+namespace: model_ontology
+def: "A parameter to describe the order of the fusion protein domains from N terminus to C terminus. The parameter is defined by Cvterm IDs separated by commas (if known). " []
+relationship: part_of MO:0000010 ! protein domain model
+
+[Term]
+id: MO:0000014
+name: multiple resistance variants
+namespace: model_ontology
+def: "A parameter to describe the gene and the mapped mutation(s) within that gene. The parameter is described by the CVterm ID and the mutation(s) with format [wild-type][position][mutation], separated by commas. " []
+is_a: MO:0000004 ! single resistance variant
+relationship: part_of MO:0000002 ! protein variant model
+
+[Term]
+id: MO:0000018
+name: insertion / deletion
+namespace: model_ontology
+def: "A parameter to describe the mapped insertion or deletion. For an insertion: insert the location and genetic sequence of the insertion. For a deletion: insert the location of the deletion. For nucleotide space: insertion:  [nt][position]+[number of nucleotides]:[nucleotides] eg. nt312+1:G. For protein space: insertion: +[amino acids][start position-end position] eg. +S312. If both are known, a \"/\" may be used to separate the protein and nucleotide notation eg. nt312+3:AGC/+S312." []
+is_a: MO:0000004 ! single resistance variant
+relationship: part_of MO:0000002 ! protein variant model
+synonym: "indels" EXACT []
+
+[Term]
+id: MO:0000020
+name: protein knockout model
+namespace: model_ontology
+def: "A model to detect cases where the absence of a protein due to large scale insertions or deletions confers elevated resistance to antibiotic(s). These models include reference sequences and a curated BLASTP cut-off." []
+is_a: MO:0000001 ! AMR detection models
+
+[Term]
+id: MO:0000021
+name: taxa restriction
+namespace: model_ontology
+def: "A parameter to restrict the Resistance Gene Identifier search to specific taxa." []
+relationship: part_of MO:0000009 ! protein homolog model
+relationship: part_of MO:0000020 ! protein knockout model
+
+[Term]
+id: MO:0000022
+name: nonsense SNP
+namespace: model_ontology
+def: "A SNP that changes an amino acid residue to a STOP codon resulting in a truncated protein product. These mutations are recorded in the format: [wild type amino acid][position][STOP] (e.g. Q42STOP)" []
+relationship: part_of MO:0000002 ! protein variant model
+relationship: part_of MO:0000017 ! deletion model
+relationship: part_of MO:0000019 ! insertion model
+
+[Term]
+id: MO:0000023
+name: co-dependent single resistance variant
+namespace: model_ontology
+def: "A model parameter to describe mutations in multiple genes that are dependent on each other's presence to confer resistance. For example, the G247S SNP in M. tuberculosis gyrA does not confer resistance to fluoroquinolones. However, when the D500N SNP is also present in gyrB, resistance is conferred. In this case, gyrA G247S is co-dependent on gyrB D500N to confer resistance. Notation: [cvterm-id-gene-1],[gene-1-SNP]+[cvterm-id-gene-2],[gene-2-SNP]+ ... +[cvterm-id-gene-n],[gene-n-SNP] e.g. 39879,G247S+40052,D500N" []
+relationship: part_of MO:0000002 ! protein variant model
+
+[Term]
+id: MO:0000024
+name: frameshift
+namespace: model_ontology
+def: "Insertion or deletion causing a frameshift mutation. These may contain data on the new STOP codon location if reported in the literature. For example, the notation for a frameshift after K136 creating a new STOP codon at P167 is: K136fs;P167STOP. If new STOP is unknown, K136fs is sufficient." []
+relationship: part_of MO:0000002 ! protein variant model
+
+[Term]
+id: MO:0000025
+name: co-dependent nonsense SNP
+namespace: model_ontology
+def: "A model parameter to describe mutations in multiple genes that are dependent on each other's presence to confer resistance. For example, a mutation to Gene A does not confer resistance, but with an additional nonsense mutation in Gene B, resistance is conferred. Notation: [cvterm-id-gene-1],[gene-1-nonsenseSNP]+[cvterm-id-gene-2],[gene-2-nonsenseSNP]+ ... +[cvterm-id-gene-n],[gene-n-nonsenseSNP] e.g. 39879,G247S+40052,D500STOP" []
+relationship: part_of MO:0000002 ! protein variant model
+
+[Term]
+id: MO:0000026
+name: co-dependent insertion/deletion
+namespace: model_ontology
+def: "A model parameter to describe mutations in multiple genes that are dependent on each other's presence to confer resistance. For example, a mutation to Gene A does not confer resistance, but with an additional deletion mutation in Gene B, resistance is conferred. Notation: [cvterm-id-gene-1],[gene-1-mutation]+[cvterm-id-gene-2],[gene-2-mutation]+ ... +[cvterm-id-gene-n],[gene-n-mutation], with mutation notation corresponding to the appropriate type and notation from the non-co-dependent parameter (ie. single resistance variant, insertion/deletion and nonsense SNP) e.g. 39879,G247S+40052,nt502-1:C" []
+relationship: part_of MO:0000002 ! protein variant model
+
+[Term]
+id: MO:0000027
+name: reverse antibiotic model
+namespace: model_ontology
+def: "The Reverse Antibiotic model applies to cases where a drug acts on a mutant form of a protein, thus counteracting conferred resistance from the mutation. An example of this is the relationship between nybomycin and quinolones: the S84L mutation in gyrA confers resistance to quinolones, but creates the required binding site for nybomycin to act on the mutant gyrA. Nybomycin in this case is therefore considered a Reverse Antibiotic (RA) as it acts on the mutant protein." []
+is_a: MO:0000001 ! AMR detection models
+
+[Term]
+id: MO:0000028
+name: nonfunctional insertion model
+namespace: model_ontology
+def: "Models to detect the inclusion of a large insertion element. These insertion elements create a nonfunctional protein which confers resistance." []
+is_a: MO:0000001 ! AMR detection models
+
+[Term]
+id: MO:0000029
+name: BLASTP bit-score
+namespace: model_ontology
+def: "A score is a numerical value that describes the overall quality of an alignment. Higher numbers correspond to higher similarity. The bit-score (S) is determined by the following formula: S = (λ × S − lnK)/ ln2 where λ is the Gumble distribution constant, S is the raw alignment score, and K is a constant associated with the scoring matrix." []
+relationship: part_of MO:0000009 ! protein homolog model
+
+[Typedef]
+id: is_a
+name: is_a
+xref: RO:is_a
+
+[Typedef]
+id: part_of
+name: part_of
+xref: RO:part_of
+

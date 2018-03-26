@@ -1,0 +1,6 @@
+escherichia coli	ecoli1	ecoli2
+klebsiella pneumoniae	kpneumoniae
+citrobacter freundii	cfreundii
+salmonella enteritidis	salmonella
+enterobacter cloacae	ecloacae
+pseudomonas aeruginosa	paeruginosa
