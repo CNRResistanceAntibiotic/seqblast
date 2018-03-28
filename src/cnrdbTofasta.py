@@ -4,12 +4,13 @@
 
 import os
 import argparse
-import filepaths
 import re
 import logging
 from dbtools import read_cnr_DBase
-path = filepaths.determine_path()
+
+path = os.path.dirname(os.path.realpath(__file__))
 working_directory = os.getcwd()
+
 
 def checkKeyExisted(key, my_dict):
 	try:
