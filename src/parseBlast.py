@@ -5,12 +5,11 @@
 import os
 #import json
 import argparse
-import filepaths
 import logging
 import re
 from dbtools import pairwisealn, read_cnr_DBase
 
-path = filepaths.determine_path()
+path = os.path.dirname(os.path.realpath(__file__))
 
 
 def isfloat(value):

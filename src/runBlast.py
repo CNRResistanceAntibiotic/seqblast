@@ -4,10 +4,9 @@
 
 import os
 import argparse
-import filepaths
 import logging
 
-path = filepaths.determine_path()
+path = os.path.dirname(os.path.realpath(__file__))
 
 def getSequence(afile):
 	sequences_dict = {}
